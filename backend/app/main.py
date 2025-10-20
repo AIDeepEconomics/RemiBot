@@ -16,6 +16,11 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
     
+    # Health check endpoint para Railway
+    @app.get("/")
+    async def health_check():
+        return {"status": "ok", "service": "RemiBOT Backend"}
+    
     app.include_router(api_router)
     return app
 
