@@ -1,0 +1,1 @@
+"""RemiBOT FastAPI application package."""
