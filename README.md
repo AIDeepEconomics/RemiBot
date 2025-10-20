@@ -177,4 +177,4 @@ VITE_BACKEND_BASE_URL=http://localhost:8000
 
 ## 📝 Licencia
 
-MIT
+AI Deep Economics SAS 2025. Todos los derechos reservados
