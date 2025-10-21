@@ -1,6 +1,15 @@
 import { useMemo } from "react";
 
-const mockRemitos = [];
+interface Remito {
+  id_remito: string;
+  nombre_chacra: string;
+  nombre_destino: string;
+  peso_estimado_tn: number;
+  estado_remito: string;
+  activo: boolean;
+}
+
+const mockRemitos: Remito[] = [];
 
 export function RemitosView(): JSX.Element {
   const remitos = useMemo(() => mockRemitos, []);
