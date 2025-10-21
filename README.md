@@ -75,7 +75,46 @@ El sistema identifica automáticamente la empresa del usuario por su número de 
    - Números registrados → Reciben catálogo de su empresa (establecimientos y chacras)
    - Números NO registrados → Mensaje educado explicando que deben contactar al administrador
 
-## 🚀 Desarrollo Local
+## 🚀 Deployment en Producción (Railway)
+
+RemiBOT está desplegado en **Railway** con dos servicios independientes:
+
+### 🔧 Backend (FastAPI)
+- **URL**: `https://remibot-production-e609.up.railway.app`
+- **Documentación API**: `/docs`
+- **Health Check**: `/`
+- **Configuración**:
+  - Root Directory: `backend`
+  - Builder: Nixpacks (Python 3.12)
+  - Start Command: `uvicorn app.main:app --host 0.0.0.0 --port $PORT`
+
+### 🎨 Frontend (React + Vite)
+- **Configuración**:
+  - Root Directory: `frontend`
+  - Builder: Nixpacks (Node.js 20)
+  - Build: `npm install && npm run build`
+  - Start Command: `npx serve -s dist -p $PORT`
+
+### 📋 Pasos para Desplegar
+
+1. **Crear proyecto en Railway** desde GitHub
+2. **Configurar Backend**:
+   - Root Directory: `backend`
+   - Variables de entorno: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `OPENAI_API_KEY`, etc.
+   - Generar dominio público
+3. **Configurar Frontend**:
+   - Root Directory: `frontend`
+   - Variable: `VITE_BACKEND_BASE_URL` (URL del backend)
+   - Generar dominio público
+4. **Actualizar Backend**:
+   - Variable: `FRONTEND_URL` (URL del frontend)
+   - Redeploy
+
+**Guía completa**: Ver [`DEPLOYMENT.md`](./DEPLOYMENT.md)
+
+---
+
+## 💻 Desarrollo Local
 
 ### Requisitos Previos
 
@@ -174,6 +213,29 @@ FRONTEND_URL=http://localhost:5173
 ```env
 VITE_BACKEND_BASE_URL=http://localhost:8000
 ```
+
+## 📦 Archivos de Configuración para Railway
+
+El proyecto incluye archivos específicos para el deployment en Railway:
+
+### Backend
+- `backend/railway.json`: Configuración de build y deploy
+- `backend/Procfile`: Comando de inicio alternativo
+- `backend/runtime.txt`: Versión de Python (3.12.0)
+
+### Frontend
+- `frontend/railway.json`: Configuración de deploy
+- `frontend/nixpacks.toml`: Configuración de build con Nixpacks
+
+Estos archivos permiten que Railway detecte automáticamente cómo construir y ejecutar cada servicio.
+
+---
+
+## 🔄 CI/CD
+
+Railway detecta automáticamente los cambios en la rama `main` de GitHub y redespliega los servicios afectados. No se requiere configuración adicional.
+
+---
 
 ## 📝 Licencia
 
