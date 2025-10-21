@@ -35,6 +35,7 @@ class Settings(BaseSettings):
     whatsapp_token: str | None = Field(None, alias="WHATSAPP_TOKEN")
     whatsapp_phone_id: str | None = Field(None, alias="WHATSAPP_PHONE_ID")
     whatsapp_api_version: str = Field("v18.0", alias="WHATSAPP_API_VERSION")
+    whatsapp_verify_token: str = Field("remibot_verify_2025", alias="WHATSAPP_VERIFY_TOKEN")
 
     # Servicios inicializados en __init__
     supabase_service_client: Any = None
