@@ -11,38 +11,19 @@ router = APIRouter()
 
 @router.get("/whatsapp")
 async def verify_webhook(
-    request: Request,
-    hub_mode: str = Query(alias="hub.mode"),
-    hub_verify_token: str = Query(alias="hub.verify_token"),
-    hub_challenge: str = Query(alias="hub.challenge"),
-    settings=Depends(get_settings),
+    hub_mode: str = Query(None, alias="hub.mode"),
+    hub_verify_token: str = Query(None, alias="hub.verify_token"),
+    hub_challenge: str = Query(None, alias="hub.challenge"),
 ) -> PlainTextResponse:
     """
     Endpoint de verificación del webhook de WhatsApp.
     Meta/Facebook llama a este endpoint con parámetros de verificación.
     """
-    # El verify token debe estar en las variables de entorno
-    expected_token = settings.whatsapp_verify_token
+    # Token de verificación hardcodeado para simplificar
+    expected_token = "remibot_verify_2025"
     
     if hub_mode == "subscribe" and hub_verify_token == expected_token:
-        try:
-            await settings.log_service.write_log(
-                tipo="WEBHOOK",
-                detalle="Webhook verificado exitosamente",
-                payload={"mode": hub_mode},
-            )
-        except Exception:
-            pass  # No fallar si el log falla
         return PlainTextResponse(content=hub_challenge)
-    
-    try:
-        await settings.log_service.write_log(
-            tipo="WEBHOOK",
-            detalle="Intento de verificación fallido",
-            payload={"mode": hub_mode, "token_match": hub_verify_token == expected_token},
-        )
-    except Exception:
-        pass  # No fallar si el log falla
     
     raise HTTPException(status_code=403, detail="Verificación fallida")
 
