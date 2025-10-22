@@ -122,10 +122,15 @@ class QRCodeService:
         return buffer.getvalue()
 
     def _upload_image(self, key: str, data: bytes) -> None:
+        # Ensure all file options are strings
+        file_options = {
+            "content-type": "image/png",
+            "upsert": "true"  # Convert boolean to string
+        }
         self.supabase.storage.from_(self.bucket_name).upload(
             file=data,
             path=key,
-            file_options={"content-type": "image/png", "upsert": True},
+            file_options=file_options,
         )
 
     def _ensure_bucket(self) -> None:
