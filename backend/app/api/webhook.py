@@ -42,11 +42,14 @@ async def handle_whatsapp_webhook(
         raw_payload = await request.json()
         
         # Log del payload completo para debugging
-        await settings.log_service.write_log(
-            tipo="WEBHOOK",
-            detalle="Payload raw de WhatsApp",
-            payload=raw_payload,
-        )
+        try:
+            await settings.log_service.write_log(
+                tipo="WEBHOOK",
+                detalle="Payload raw de WhatsApp",
+                payload=raw_payload,
+            )
+        except Exception:
+            pass  # No fallar si el log falla
         
         # Extraer información del formato de WhatsApp
         # Formato: {"object": "whatsapp_business_account", "entry": [...]}
@@ -88,24 +91,31 @@ async def handle_whatsapp_webhook(
                     # Procesar el mensaje
                     response = await settings.remito_flow_v2.handle_message(webhook_payload)
                     
-                    await settings.log_service.write_log(
-                        tipo="WEBHOOK",
-                        detalle="Respuesta enviada al contacto",
-                        payload={
-                            "from": from_number,
-                            "message_id": message_id,
-                            "reply": response.reply,
-                            "metadata": response.metadata,
-                        },
-                    )
+                    try:
+                        await settings.log_service.write_log(
+                            tipo="WEBHOOK",
+                            detalle="Respuesta enviada al contacto",
+                            payload={
+                                "from": from_number,
+                                "message_id": message_id,
+                                "reply": response.reply,
+                                "metadata": response.metadata,
+                            },
+                        )
+                    except Exception:
+                        pass  # No fallar si el log falla
         
         return {"status": "ok"}
         
     except Exception as e:
-        await settings.log_service.write_log(
-            tipo="WEBHOOK",
-            detalle=f"Error procesando webhook: {str(e)}",
-            payload={"error": str(e)},
-        )
+        import traceback
+        try:
+            await settings.log_service.write_log(
+                tipo="WEBHOOK",
+                detalle=f"Error procesando webhook: {str(e)}",
+                payload={"error": str(e), "traceback": traceback.format_exc()},
+            )
+        except Exception:
+            pass
         # Devolver 200 para que WhatsApp no reintente
         return {"status": "error", "message": str(e)}
