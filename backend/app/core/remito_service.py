@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
+import traceback
 
 from supabase import Client
 
@@ -106,43 +107,76 @@ class RemitoService:
     async def create_remito(self, payload: RemitoCreate) -> Remito:
         timestamp = datetime.now(timezone.utc)
         remito_id = self._build_remito_id(payload.id_chacra, timestamp)
-        qr_url = payload.qr_url or await self.qrcode_service.generate(
-            {
-                "id_remito": remito_id,
-                "nombre_establecimiento": payload.nombre_establecimiento,
-                "nombre_chacra": payload.nombre_chacra,
-                "nombre_destino": payload.nombre_destino,
-                "matricula_camion": payload.matricula_camion,
-                "matricula_zorra": payload.matricula_zorra,
-                "nombre_conductor": payload.nombre_conductor,
-                "cedula_conductor": payload.cedula_conductor,
-                "timestamp": timestamp.strftime("%Y-%m-%d %H:%M"),
-            },
-            include_text=True,
-        )
-
-        remito_data = {
-            **payload.model_dump(exclude={"qr_url"}),
-            "id_remito": remito_id,
-            "qr_url": qr_url,
-            "timestamp_creacion": timestamp.isoformat(),
-        }
-
-        def _insert_sync() -> Dict[str, Any]:
-            response = self.supabase.table(self.TABLE_NAME).insert(remito_data).execute()
-            return response.data[0] if response.data else remito_data
-
-        record = await asyncio.to_thread(_insert_sync)
-        remito = self._record_to_model(record)
-
+        
         if self.log_service:
             await self.log_service.write_log(
-                tipo="REMITO",
-                detalle=f"Remito creado {remito_id}",
-                payload={"id_remito": remito_id, "id_chacra": payload.id_chacra},
+                tipo="DEBUG",
+                detalle=f"Iniciando creación de remito {remito_id}",
+                payload={"id_chacra": payload.id_chacra, "timestamp": timestamp.isoformat()},
             )
 
-        return remito
+        try:
+            # Generar QR code
+            qr_url = payload.qr_url or await self.qrcode_service.generate(
+                {
+                    "id_remito": remito_id,
+                    "nombre_establecimiento": payload.nombre_establecimiento,
+                    "nombre_chacra": payload.nombre_chacra,
+                    "nombre_destino": payload.nombre_destino,
+                    "matricula_camion": payload.matricula_camion,
+                    "matricula_zorra": payload.matricula_zorra,
+                    "nombre_conductor": payload.nombre_conductor,
+                    "cedula_conductor": payload.cedula_conductor,
+                    "timestamp": timestamp.strftime("%Y-%m-%d %H:%M"),
+                },
+                include_text=True,
+            )
+
+            if self.log_service:
+                await self.log_service.write_log(
+                    tipo="DEBUG",
+                    detalle=f"QR generado para remito {remito_id}",
+                    payload={"qr_url": qr_url},
+                )
+
+            remito_data = {
+                **payload.model_dump(exclude={"qr_url"}),
+                "id_remito": remito_id,
+                "qr_url": qr_url,
+                "timestamp_creacion": timestamp.isoformat(),
+            }
+
+            def _insert_sync() -> Dict[str, Any]:
+                response = self.supabase.table(self.TABLE_NAME).insert(remito_data).execute()
+                return response.data[0] if response.data else remito_data
+
+            record = await asyncio.to_thread(_insert_sync)
+            
+            if self.log_service:
+                await self.log_service.write_log(
+                    tipo="DEBUG",
+                    detalle=f"Remito {remito_id} insertado en Supabase",
+                    payload={"record": record},
+                )
+
+            remito = self._record_to_model(record)
+
+            if self.log_service:
+                await self.log_service.write_log(
+                    tipo="REMITO",
+                    detalle=f"Remito creado {remito_id}",
+                    payload={"id_remito": remito_id, "id_chacra": payload.id_chacra},
+                )
+
+            return remito
+        except Exception as e:
+            if self.log_service:
+                await self.log_service.write_log(
+                    tipo="ERROR",
+                    detalle=f"Error creando remito {remito_id}",
+                    payload={"error": str(e), "stack_trace": traceback.format_exc()},
+                )
+            raise
 
     async def update_remito(self, remito_id: str, payload: RemitoUpdate) -> Remito:
         update_data = payload.model_dump(exclude_unset=True, mode="python")

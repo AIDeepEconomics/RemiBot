@@ -4,6 +4,7 @@ import asyncio
 from datetime import datetime
 from io import BytesIO
 from typing import Any, Dict
+import traceback
 
 import qrcode
 from PIL import Image, ImageDraw, ImageFont
@@ -20,16 +21,30 @@ class QRCodeService:
         self._bucket_checked = False
 
     async def generate(self, payload: Dict[str, Any], include_text: bool = True) -> str:
-        qr_text = self._compose_text(payload)
-        storage_key = self._compose_storage_key(payload)
+        try:
+            qr_text = self._compose_text(payload)
+            storage_key = self._compose_storage_key(payload)
 
-        # Pasar metadata para agregar texto a la imagen
-        metadata = payload if include_text else None
-        image_bytes = await asyncio.to_thread(self._build_qr_bytes, qr_text, metadata)
-        await asyncio.to_thread(self._ensure_bucket)
-        await asyncio.to_thread(self._upload_image, storage_key, image_bytes)
-
-        return self.supabase.storage.from_(self.bucket_name).get_public_url(storage_key)
+            # Pasar metadata para agregar texto a la imagen
+            metadata = payload if include_text else None
+            image_bytes = await asyncio.to_thread(self._build_qr_bytes, qr_text, metadata)
+            await asyncio.to_thread(self._ensure_bucket)
+            
+            # Subir imagen a Supabase Storage
+            await asyncio.to_thread(self._upload_image, storage_key, image_bytes)
+            
+            public_url = self.supabase.storage.from_(self.bucket_name).get_public_url(storage_key)
+            return public_url
+            
+        except Exception as e:
+            error_msg = f"Error generando QR: {str(e)}"
+            if hasattr(self, 'log_service') and self.log_service:
+                await self.log_service.write_log(
+                    tipo="ERROR",
+                    detalle=error_msg,
+                    payload={"error": str(e), "stack_trace": traceback.format_exc()},
+                )
+            raise Exception(error_msg) from e
 
     def _build_qr_bytes(self, text: str, metadata: Dict[str, Any] = None) -> bytes:
         """Genera QR con texto informativo debajo."""
