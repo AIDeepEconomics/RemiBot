@@ -132,17 +132,30 @@ class QRCodeService:
         if self._bucket_checked:
             return
 
-        buckets = self.supabase.storage.list_buckets()
-        if not any(bucket.get("name") == self.bucket_name for bucket in buckets):
-            # Create bucket without public parameter
-            self.supabase.storage.create_bucket(self.bucket_name)
-            # Make bucket public through separate API call
-            self.supabase.storage.update_bucket(
-                self.bucket_name,
-                {"public": True}
-            )
-
-        self._bucket_checked = True
+        try:
+            # Get list of buckets using current API format
+            buckets = self.supabase.storage.list_buckets()
+            
+            # Check if our bucket exists using the correct attribute access
+            bucket_exists = any(bucket.name == self.bucket_name for bucket in buckets)
+            
+            if not bucket_exists:
+                # Create bucket if it doesn't exist
+                self.supabase.storage.create_bucket(self.bucket_name)
+                # Make bucket public
+                self.supabase.storage.update_bucket(self.bucket_name, {"public": True})
+                
+            self._bucket_checked = True
+            
+        except Exception as e:
+            error_msg = f"Error ensuring bucket exists: {str(e)}"
+            if hasattr(self, 'log_service') and self.log_service:
+                self.log_service.write_log(
+                    tipo="ERROR",
+                    detalle=error_msg,
+                    payload={"error": str(e), "bucket_name": self.bucket_name}
+                )
+            raise Exception(error_msg) from e
 
     @staticmethod
     def _compose_text(payload: Dict[str, Any]) -> str:
