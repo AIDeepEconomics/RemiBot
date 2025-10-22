@@ -12,43 +12,34 @@ router = APIRouter()
 @router.get("/env")
 async def check_environment():
     """
-    Verifica qué variables de entorno están configuradas (sin mostrar valores).
+    Endpoint para verificar qué variables de entorno están configuradas.
     """
-    required_vars = [
-        "SUPABASE_URL",
-        "SUPABASE_SERVICE_ROLE_KEY",
-        "SUPABASE_ANON_KEY",
-        "OPENAI_API_KEY",
-        "CLAUDE_API_KEY",
-        "WHATSAPP_TOKEN",
-        "WHATSAPP_PHONE_ID",
-        "WHATSAPP_VERIFY_TOKEN",
-    ]
+    env_vars = {
+        "SUPABASE_URL": "set" if os.getenv("SUPABASE_URL") else "missing",
+        "SUPABASE_ANON_KEY": "set" if os.getenv("SUPABASE_ANON_KEY") else "missing",
+        "SUPABASE_SERVICE_ROLE_KEY": "set" if os.getenv("SUPABASE_SERVICE_ROLE_KEY") else "missing",
+        "OPENAI_API_KEY": "set" if os.getenv("OPENAI_API_KEY") else "missing",
+        "CLAUDE_API_KEY": "set" if os.getenv("CLAUDE_API_KEY") else "missing",
+        "WHATSAPP_TOKEN": "set" if os.getenv("WHATSAPP_TOKEN") else "missing",
+        "WHATSAPP_PHONE_ID": "set" if os.getenv("WHATSAPP_PHONE_ID") else "missing",
+        "ENVIRONMENT": os.getenv("ENVIRONMENT", "not set"),
+        "FRONTEND_URL": os.getenv("FRONTEND_URL", "not set"),
+    }
     
-    env_status = {}
-    for var in required_vars:
-        value = os.getenv(var)
-        if value:
-            # Mostrar solo los primeros y últimos caracteres
-            if len(value) > 10:
-                masked = f"{value[:4]}...{value[-4:]}"
-            else:
-                masked = "***"
-            env_status[var] = {
-                "set": True,
-                "length": len(value),
-                "preview": masked
-            }
-        else:
-            env_status[var] = {
-                "set": False,
-                "length": 0,
-                "preview": None
-            }
+    # Intentar inicializar settings y ver el error
+    settings_error = None
+    try:
+        from app.core.settings import Settings
+        settings = Settings()
+        settings_status = "initialized"
+    except Exception as e:
+        settings_status = "failed"
+        settings_error = str(e)
     
     return {
-        "environment_variables": env_status,
-        "missing_required": [k for k, v in env_status.items() if not v["set"] and k in ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]]
+        "environment_variables": env_vars,
+        "settings_initialization": settings_status,
+        "settings_error": settings_error
     }
 
 
