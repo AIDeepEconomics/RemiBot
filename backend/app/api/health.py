@@ -1,10 +1,55 @@
 from __future__ import annotations
 
+import os
+
 from fastapi import APIRouter, Depends
 
 from app.core.settings import get_settings
 
 router = APIRouter()
+
+
+@router.get("/env")
+async def check_environment():
+    """
+    Verifica qué variables de entorno están configuradas (sin mostrar valores).
+    """
+    required_vars = [
+        "SUPABASE_URL",
+        "SUPABASE_SERVICE_ROLE_KEY",
+        "SUPABASE_ANON_KEY",
+        "OPENAI_API_KEY",
+        "CLAUDE_API_KEY",
+        "WHATSAPP_TOKEN",
+        "WHATSAPP_PHONE_ID",
+        "WHATSAPP_VERIFY_TOKEN",
+    ]
+    
+    env_status = {}
+    for var in required_vars:
+        value = os.getenv(var)
+        if value:
+            # Mostrar solo los primeros y últimos caracteres
+            if len(value) > 10:
+                masked = f"{value[:4]}...{value[-4:]}"
+            else:
+                masked = "***"
+            env_status[var] = {
+                "set": True,
+                "length": len(value),
+                "preview": masked
+            }
+        else:
+            env_status[var] = {
+                "set": False,
+                "length": 0,
+                "preview": None
+            }
+    
+    return {
+        "environment_variables": env_status,
+        "missing_required": [k for k, v in env_status.items() if not v["set"] and k in ["SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]]
+    }
 
 
 @router.get("/supabase")
