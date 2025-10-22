@@ -210,6 +210,18 @@ class RemitoFlowManagerV2:
         else:
             # Flujo normal: enviar respuesta por WhatsApp
             self.conversation_store.append(contact, "assistant", llm_response)
+            
+            # Enviar mensaje por WhatsApp
+            if self.whatsapp_service:
+                try:
+                    await self.whatsapp_service.send_text(to=contact, text=llm_response)
+                except Exception as e:
+                    await self.log_service.write_log(
+                        tipo="ERROR",
+                        detalle=f"Error enviando mensaje por WhatsApp: {str(e)}",
+                        payload={"contacto": contact, "error": str(e)},
+                    )
+            
             return WhatsAppWebhookResponse(
                 reply=llm_response,
                 metadata={"status": "conversation"},
