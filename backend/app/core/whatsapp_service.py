@@ -56,18 +56,14 @@ class WhatsAppService:
 
     async def _send_request(self, payload: dict) -> dict:
         """Envía una petición a la API de WhatsApp."""
-
-        async def _request():
-            async with httpx.AsyncClient(timeout=30.0) as client:
-                response = await client.post(
-                    self.base_url,
-                    json=payload,
-                    headers={
-                        "Authorization": f"Bearer {self.access_token}",
-                        "Content-Type": "application/json",
-                    },
-                )
-                response.raise_for_status()
-                return response.json()
-
-        return await asyncio.to_thread(_request)
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                self.base_url,
+                json=payload,
+                headers={
+                    "Authorization": f"Bearer {self.access_token}",
+                    "Content-Type": "application/json",
+                },
+            )
+            response.raise_for_status()
+            return response.json()
