@@ -318,7 +318,7 @@ class RemitoFlowManagerV2:
                     "status": "created",
                     "id_remito": remito.id_remito,
                     "qr_url": remito.qr_url,
-                    "image_sent": self.whatsapp_service is not None,
+                    "image_sent": str(self.whatsapp_service is not None),
                 },
             )
 
