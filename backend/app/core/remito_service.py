@@ -147,6 +147,9 @@ class RemitoService:
             }
 
             def _insert_sync() -> Dict[str, Any]:
+                # Refresh schema cache before insert
+                self.supabase.table(self.TABLE_NAME).select("*", count="exact").limit(0).execute()
+                # Perform actual insert
                 response = self.supabase.table(self.TABLE_NAME).insert(remito_data).execute()
                 return response.data[0] if response.data else remito_data
 
