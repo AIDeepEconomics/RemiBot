@@ -26,20 +26,46 @@ async def check_environment():
         "FRONTEND_URL": os.getenv("FRONTEND_URL", "not set"),
     }
     
+    # Verificar versión de supabase
+    supabase_version = "unknown"
+    try:
+        import supabase
+        supabase_version = getattr(supabase, "__version__", "no __version__ attribute")
+    except Exception as e:
+        supabase_version = f"import error: {str(e)}"
+    
+    # Intentar crear cliente directamente
+    client_test = None
+    try:
+        from supabase import create_client
+        test_client = create_client(
+            supabase_url=os.getenv("SUPABASE_URL"),
+            supabase_key=os.getenv("SUPABASE_SERVICE_ROLE_KEY")
+        )
+        client_test = "success"
+    except Exception as e:
+        client_test = f"failed: {str(e)}"
+    
     # Intentar inicializar settings y ver el error
     settings_error = None
+    settings_traceback = None
     try:
         from app.core.settings import Settings
         settings = Settings()
         settings_status = "initialized"
     except Exception as e:
+        import traceback
         settings_status = "failed"
         settings_error = str(e)
+        settings_traceback = traceback.format_exc()
     
     return {
         "environment_variables": env_vars,
+        "supabase_version": supabase_version,
+        "direct_client_test": client_test,
         "settings_initialization": settings_status,
-        "settings_error": settings_error
+        "settings_error": settings_error,
+        "settings_traceback": settings_traceback
     }
 
 
