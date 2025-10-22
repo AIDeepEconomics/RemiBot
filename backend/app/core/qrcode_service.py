@@ -119,7 +119,13 @@ class QRCodeService:
 
         buckets = self.supabase.storage.list_buckets()
         if not any(bucket.get("name") == self.bucket_name for bucket in buckets):
-            self.supabase.storage.create_bucket(self.bucket_name, public=True)
+            # Create bucket without public parameter
+            self.supabase.storage.create_bucket(self.bucket_name)
+            # Make bucket public through separate API call
+            self.supabase.storage.update_bucket(
+                self.bucket_name,
+                {"public": True}
+            )
 
         self._bucket_checked = True
 
