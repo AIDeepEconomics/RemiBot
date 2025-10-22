@@ -28,9 +28,9 @@ Sistema inteligente de gestión de remitos arroceros mediante WhatsApp con conte
 Dependencias claves en `backend/requirements.txt`:
 
 - `fastapi`, `uvicorn` para API HTTP.
-- `httpx` para integraciones REST (WhatsApp, LLMs).
-- `supabase` para persistencia (future work: conexión real a Supabase).
-- `qrcode`, `pillow` para generación de QR (placeholder actual).
+- `httpx==0.27.0` para integraciones REST (WhatsApp, LLMs).
+- `supabase==2.7.4` para persistencia en PostgreSQL.
+- `qrcode`, `pillow` para generación de códigos QR.
 
 ### Frontend (Vite + React + TS)
 
@@ -198,10 +198,11 @@ SUPABASE_ANON_KEY=xxx
 OPENAI_API_KEY=sk-xxx
 ANTHROPIC_API_KEY=sk-ant-xxx
 
-# WhatsApp (opcional)
+# WhatsApp
 WHATSAPP_TOKEN=xxx
 WHATSAPP_PHONE_ID=xxx
-WHATSAPP_API_VERSION=v18.0
+WHATSAPP_API_VERSION=v22.0
+WHATSAPP_VERIFY_TOKEN=remibot_verify_2025
 
 # General
 ENVIRONMENT=development
