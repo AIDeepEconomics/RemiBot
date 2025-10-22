@@ -69,6 +69,36 @@ async def check_environment():
     }
 
 
+@router.get("/logs")
+async def check_recent_logs(settings=Depends(get_settings)):
+    """
+    Endpoint para ver los últimos logs del sistema.
+    """
+    try:
+        logs = await settings.log_service.list_logs(limit=10)
+        return {
+            "status": "ok",
+            "count": len(logs),
+            "logs": [
+                {
+                    "id": log.id,
+                    "tipo": log.tipo,
+                    "detalle": log.detalle,
+                    "timestamp": str(log.timestamp),
+                    "payload": log.payload
+                }
+                for log in logs
+            ]
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "status": "error",
+            "message": str(e),
+            "traceback": traceback.format_exc()
+        }
+
+
 @router.get("/supabase")
 async def check_supabase_connection(settings=Depends(get_settings)):
     """
