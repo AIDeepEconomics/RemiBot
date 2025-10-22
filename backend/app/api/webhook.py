@@ -22,21 +22,28 @@ async def verify_webhook(
     Meta/Facebook llama a este endpoint con parámetros de verificación.
     """
     # El verify token debe estar en las variables de entorno
-    expected_token = getattr(settings, "whatsapp_verify_token", "remibot_verify_2025")
+    expected_token = settings.whatsapp_verify_token
     
     if hub_mode == "subscribe" and hub_verify_token == expected_token:
-        await settings.log_service.write_log(
-            tipo="WEBHOOK",
-            detalle="Webhook verificado exitosamente",
-            payload={"mode": hub_mode},
-        )
+        try:
+            await settings.log_service.write_log(
+                tipo="WEBHOOK",
+                detalle="Webhook verificado exitosamente",
+                payload={"mode": hub_mode},
+            )
+        except Exception:
+            pass  # No fallar si el log falla
         return PlainTextResponse(content=hub_challenge)
     
-    await settings.log_service.write_log(
-        tipo="WEBHOOK",
-        detalle="Intento de verificación fallido",
-        payload={"mode": hub_mode, "token_match": hub_verify_token == expected_token},
-    )
+    try:
+        await settings.log_service.write_log(
+            tipo="WEBHOOK",
+            detalle="Intento de verificación fallido",
+            payload={"mode": hub_mode, "token_match": hub_verify_token == expected_token},
+        )
+    except Exception:
+        pass  # No fallar si el log falla
+    
     raise HTTPException(status_code=403, detail="Verificación fallida")
 
 
