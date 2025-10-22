@@ -28,39 +28,84 @@ async def verify_webhook(
     raise HTTPException(status_code=403, detail="Verificación fallida")
 
 
-@router.post("/whatsapp", response_model=WhatsAppWebhookResponse)
-async def handle_whatsapp_webhook(  # type: ignore[no-untyped-def]
-    payload: WhatsAppWebhookPayload,
+@router.post("/whatsapp")
+async def handle_whatsapp_webhook(
+    request: Request,
     settings=Depends(get_settings),
-) -> WhatsAppWebhookResponse:
+):
     """
     Webhook para recibir mensajes de WhatsApp.
     Usa flujo conversacional V2 con contexto personalizado por empresa.
     """
-    if not payload.body.strip():
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Mensaje vacío")
-
-    await settings.log_service.write_log(
-        tipo="WEBHOOK",
-        detalle="Mensaje entrante de WhatsApp",
-        payload={
-            "from": payload.from_number,
-            "message_id": payload.message_id,
-            "body": payload.body,
-        },
-    )
-
-    response = await settings.remito_flow_v2.handle_message(payload)
-
-    await settings.log_service.write_log(
-        tipo="WEBHOOK",
-        detalle="Respuesta enviada al contacto",
-        payload={
-            "from": payload.from_number,
-            "message_id": payload.message_id,
-            "reply": response.reply,
-            "metadata": response.metadata,
-        },
-    )
-
-    return response
+    try:
+        # Obtener el payload raw de WhatsApp
+        raw_payload = await request.json()
+        
+        # Log del payload completo para debugging
+        await settings.log_service.write_log(
+            tipo="WEBHOOK",
+            detalle="Payload raw de WhatsApp",
+            payload=raw_payload,
+        )
+        
+        # Extraer información del formato de WhatsApp
+        # Formato: {"object": "whatsapp_business_account", "entry": [...]}
+        if raw_payload.get("object") != "whatsapp_business_account":
+            return {"status": "ok"}
+        
+        entries = raw_payload.get("entry", [])
+        if not entries:
+            return {"status": "ok"}
+        
+        for entry in entries:
+            changes = entry.get("changes", [])
+            for change in changes:
+                value = change.get("value", {})
+                messages = value.get("messages", [])
+                
+                for message in messages:
+                    message_id = message.get("id")
+                    from_number = message.get("from")
+                    message_type = message.get("type")
+                    
+                    # Solo procesar mensajes de texto
+                    if message_type != "text":
+                        continue
+                    
+                    body = message.get("text", {}).get("body", "")
+                    
+                    if not body.strip():
+                        continue
+                    
+                    # Crear payload en el formato esperado
+                    webhook_payload = WhatsAppWebhookPayload(
+                        message_id=message_id,
+                        from_number=from_number,
+                        body=body,
+                        raw_event=raw_payload,
+                    )
+                    
+                    # Procesar el mensaje
+                    response = await settings.remito_flow_v2.handle_message(webhook_payload)
+                    
+                    await settings.log_service.write_log(
+                        tipo="WEBHOOK",
+                        detalle="Respuesta enviada al contacto",
+                        payload={
+                            "from": from_number,
+                            "message_id": message_id,
+                            "reply": response.reply,
+                            "metadata": response.metadata,
+                        },
+                    )
+        
+        return {"status": "ok"}
+        
+    except Exception as e:
+        await settings.log_service.write_log(
+            tipo="WEBHOOK",
+            detalle=f"Error procesando webhook: {str(e)}",
+            payload={"error": str(e)},
+        )
+        # Devolver 200 para que WhatsApp no reintente
+        return {"status": "error", "message": str(e)}
