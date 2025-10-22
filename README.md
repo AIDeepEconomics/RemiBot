@@ -23,6 +23,7 @@ Sistema inteligente de gestión de remitos arroceros mediante WhatsApp con conte
 - `app/main.py`: Punto de entrada y configuración de la instancia FastAPI.
 - `app/api/`: Conjunto de routers (`webhook`, `remitos`, `config`).
 - `app/core/`: Servicios auxiliares (LLM, QR, remitos, settings).
+  - **EmpresaContextService**: Servicio que **dinámicamente mejora el prompt del LLM** agregando contexto específico de la empresa (establecimientos y chacras) basado en el número de teléfono del usuario.
 - `app/models/`: Modelos Pydantic para tipado de payloads y respuestas.
 
 Dependencias claves en `backend/requirements.txt`:
@@ -83,6 +84,7 @@ RemiBOT está desplegado en **Railway** con dos servicios independientes:
 - **URL**: `https://remibot-production-e609.up.railway.app`
 - **Documentación API**: `/docs`
 - **Health Check**: `/`
+- **Logs del Sistema**: `/health/logs` (acceso directo a logs en producción)
 - **Configuración**:
   - Root Directory: `backend`
   - Builder: Nixpacks (Python 3.12)
