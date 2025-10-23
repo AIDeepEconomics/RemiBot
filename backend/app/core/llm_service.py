@@ -14,11 +14,11 @@ class LLMService:
         *,
         claude_api_key: Optional[str] = None,
         openai_api_key: Optional[str] = None,
-        anthropic_model: str = "claude-3-haiku-20240307",
+        anthropic_model: str = "claude-haiku-4-5-20251001",
         openai_model: str = "gpt-4o-mini",
         default_system_prompt: Optional[str] = None,
         timeout_seconds: int = 30,
-        max_tokens: int = 600,
+        max_tokens: int = 6000,
     ) -> None:
         self.claude_api_key = claude_api_key
         self.openai_api_key = openai_api_key
