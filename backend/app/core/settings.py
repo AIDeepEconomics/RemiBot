@@ -15,6 +15,7 @@ from app.core.log_service import LogService
 from app.core.phone_service import PhoneService
 from app.core.qrcode_service import QRCodeService
 from app.core.remito_flow_v2 import RemitoFlowManagerV2
+from app.core.remito_flow_v2_refactored import RemitoFlowManagerV2Refactored
 from app.core.remito_service import RemitoService
 from app.core.supabase_client import build_supabase_client
 from app.core.whatsapp_service import WhatsAppService
@@ -51,6 +52,7 @@ class Settings(BaseSettings):
     phone_service: Any = None
     empresa_context_service: Any = None
     remito_flow_v2: Any = None
+    remito_flow_v2_refactored: Any = None
 
     model_config = ConfigDict(
         env_file=".env",
@@ -105,7 +107,11 @@ class Settings(BaseSettings):
                 api_version=self.whatsapp_api_version,
             )
         
-        # Flujo conversacional V2 (LLM libre con detección JSON y contexto por empresa)
+        # Importar servicios del nuevo sistema
+        from app.services.conversation_service import ConversationService
+        from app.usecases.create_remito_usecase import CreateRemitoUseCase
+        
+        # Flujo conversacional V2 (antiguo - mantenido para compatibilidad)
         self.remito_flow_v2 = RemitoFlowManagerV2(
             llm_service=self.llm_service,
             catalog_service=self.catalog_service,
@@ -116,6 +122,31 @@ class Settings(BaseSettings):
             config_store=self.config_store,
             phone_service=self.phone_service,
             empresa_context_service=self.empresa_context_service,
+        )
+        
+        # Nuevo sistema refacturado
+        conversation_service = ConversationService(
+            llm_service=self.llm_service,
+            conversation_store=self.conversation_store,
+            log_service=self.log_service,
+        )
+        
+        create_remito_usecase = CreateRemitoUseCase(
+            remito_service=self.remito_service,
+            catalog_service=self.catalog_service,
+            qrcode_service=self.qrcode_service,
+            log_service=self.log_service,
+        )
+        
+        self.remito_flow_v2_refactored = RemitoFlowManagerV2Refactored(
+            conversation_service=conversation_service,
+            create_remito_usecase=create_remito_usecase,
+            llm_service=self.llm_service,
+            log_service=self.log_service,
+            empresa_context_service=self.empresa_context_service,
+            whatsapp_service=self.whatsapp_service,
+            config_store=self.config_store,
+            phone_service=self.phone_service,
         )
 
 

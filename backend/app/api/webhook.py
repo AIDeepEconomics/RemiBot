@@ -88,8 +88,8 @@ async def handle_whatsapp_webhook(
                         raw_event=raw_payload,
                     )
                     
-                    # Procesar el mensaje
-                    response = await settings.remito_flow_v2.handle_message(webhook_payload)
+                    # Procesar el mensaje con el nuevo sistema refacturado
+                    response = await settings.remito_flow_v2_refactored.handle_message(webhook_payload)
                     
                     try:
                         await settings.log_service.write_log(
